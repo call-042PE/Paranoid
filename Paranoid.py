@@ -27,7 +27,7 @@ class Found(Exception):
 
 def grab(x,y,w,h):
 	with mss.mss() as sct:
-		box = (x, y, w, h) # box of 20x20 pixel around the crosshair
+		box = (x, y, w, h)
 		img = sct.grab(box)
 		return PIL.Image.frombytes('RGB',img.size,img.bgra,'raw','BGRX')
 
@@ -41,36 +41,35 @@ def aimassist():
 	c = interception()
 	c.set_filter(interception.is_mouse,interception_mouse_state.INTERCEPTION_MOUSE_LEFT_BUTTON_DOWN.value | interception_mouse_state.INTERCEPTION_MOUSE_LEFT_BUTTON_UP.value)
 	while True:
-		if(hWnd == win32gui.GetForegroundWindow()):
-			device = c.wait()
-			stroke = c.receive(device)
-			if(stroke.state == interception_mouse_state.INTERCEPTION_MOUSE_LEFT_BUTTON_DOWN.value):
-				bLeftButton = True
-			while(bLeftButton):
-				img = grab(886,474,1031,608)
-				try:
-					for x in range(0,(1031-886)):
-						for y in range(0,(608-474)):
-							r,g,b = img.getpixel((x,y))
-							if approx(r,g,b) and x != 0 and y != 0:
-								newX = (886 + x) - CENTER_X # distance between crosshair and ennemy
-								raise Found
-				except Found:
-					if type(stroke) is mouse_stroke:
-						#stroke.flags = 0x008
-						if(newX >= 50):
-							stroke.x = abs(int(((newX - 5) / sensitivity) * offset_X))
-						elif(newX <= 49):
-							stroke.x = int(((newX + 5) / sensitivity) * offset_X)
-						c.send(device,stroke)
-				device2 = c.wait2(0)
-				if device2 != 0 and interception.is_mouse(device2):
-					stroke2 = c.receive(device2)
-					if(stroke2.state == 2):
-						stroke.state = interception_mouse_state.INTERCEPTION_MOUSE_LEFT_BUTTON_UP.value
-						c.send(device,stroke)
-						c.send(device2,stroke2)
-						break
-				c.send(device,stroke)
+		device = c.wait()
+		stroke = c.receive(device)
+		if(stroke.state == interception_mouse_state.INTERCEPTION_MOUSE_LEFT_BUTTON_DOWN.value):
+			bLeftButton = True
+		while(bLeftButton):
+			img = grab(886,474,1031,608)
+			try:
+				for x in range(0,(1031-886)):
+					for y in range(0,(608-474)):
+						r,g,b = img.getpixel((x,y))
+						if approx(r,g,b) and x != 0 and y != 0:
+							newX = (886 + x) - CENTER_X # distance between crosshair and ennemy
+							raise Found
+			except Found:
+				if type(stroke) is mouse_stroke:
+					if(newX >= 50):
+						stroke.x = abs(int(((newX - 5) / sensitivity) * offset_X))
+					elif(newX <= 49):
+						stroke.x = int(((newX + 5) / sensitivity) * offset_X)
+					c.send(device,stroke)
+			device2 = c.wait2(0)
+			if device2 != 0 and interception.is_mouse(device2):
+				stroke2 = c.receive(device2)
+				if(stroke2.state == 2):
+					stroke.state = interception_mouse_state.INTERCEPTION_MOUSE_LEFT_BUTTON_UP.value
+					c.send(device,stroke)
+					c.send(device2,stroke2)
+					break
+			c.send(device,stroke)
+
 print(f"Offset X: {offset_X}")
 aimassist()
